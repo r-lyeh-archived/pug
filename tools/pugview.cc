@@ -4,17 +4,23 @@
 #include <iostream>
 #include "spot/spot.hpp"
 
-void display( const spot::image &pic, const char *title );
+#define VERSION "1.0.1"
 
-int main( int argc, const char **_argv ) {
-    if( argc == 2 ) {
-        spot::image base( _argv[1] );
-        display( base, _argv[1] );
-        return 1;
+void display( const spot::image &pic, const char *title = "" );
+
+int main( int argc, char **argv ) {
+    if( argc < 2 ) {
+        std::cout << argv[0] << " v" VERSION " - quick image viewer. https://github.com/r-lyeh/pug" << std::endl << std::endl;
+        std::cout << "Usage: " << argv[0] << " image [image [...]]" << std::endl;
+        return -1;
     }
-    std::cout << _argv[0] << " v1.0.0 - https://github.com/r-lyeh/pug" << std::endl << std::endl;
-    std::cout << "Usage: " << _argv[0] << " image" << std::endl;
-    return -1;
+
+    for( int i = 1; i < argc; ++i ) {
+        spot::image base( argv[i] );
+        display( base, argv[i] );        
+    }
+
+    return 0;
 }
 
 // CImg.h code following
@@ -22,7 +28,7 @@ int main( int argc, const char **_argv ) {
 #pragma comment(lib,"shell32.lib")
 #pragma comment(lib,"user32.lib")
 #pragma comment(lib,"gdi32.lib")
-void display( const spot::image &pic, const char *title = "" ) {
+void display( const spot::image &pic, const char *title ) {
     if( pic.size() ) {
         using namespace spot;
         // check pattern that covers whole image.
@@ -43,16 +49,16 @@ void display( const spot::image &pic, const char *title = "" ) {
             check.at( p ) = pic.at( p ) * a + check.at( p ) * (1-a);
             check.at( p ).a = 1;
         }
-        auto &blend = check.clamp().to_rgba();
+        auto &blend = check;
         // display blend
         cimg_library::CImg<unsigned char> ctexture( blend.w, blend.h, 1, 4, 0 );
         for( size_t y = 0; y < blend.h; ++y ) {
             for( size_t x = 0; x < blend.w; ++x ) {
                 spot::pixel pix = blend.at( x, y );
-                ctexture( x, y, 0 ) = (unsigned char)(pix.r);
-                ctexture( x, y, 1 ) = (unsigned char)(pix.g);
-                ctexture( x, y, 2 ) = (unsigned char)(pix.b);
-                ctexture( x, y, 3 ) = (unsigned char)(pix.a);
+                ctexture( x, y, 0 ) = pix.r;
+                ctexture( x, y, 1 ) = pix.g;
+                ctexture( x, y, 2 ) = pix.b;
+                ctexture( x, y, 3 ) = pix.a;
             }
         }
         ctexture.display( title, false );

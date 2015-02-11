@@ -20,11 +20,11 @@
 | Original image    | Lossy color | Lossless alpha | Pug image |
 | :-------------: |:-------------:| :-----:| :-----: |
 | ![image](https://raw.github.com/r-lyeh/pug/master/images/panda.png) | ![image](https://raw.github.com/r-lyeh/pug/master/images/panda.pug.color.jpg) | ![image](https://raw.github.com/r-lyeh/pug/master/images/panda.pug.alpha.png) | ![image](https://raw.github.com/r-lyeh/pug/master/images/panda.pug.rebuilt.png) |
-| PNG Image, 56 KiB | JPG layer, Q=50% | PNG layer, 8-bit | PUG Image, 12 KiB |
+| PNG Image, 56 KiB | JPG layer, Q=75% | PNG layer, 8-bit | PUG Image, 13 KiB |
 | ![image](https://raw.github.com/r-lyeh/pug/master/images/dices.png) | ![image](https://raw.github.com/r-lyeh/pug/master/images/dices.pug.color.jpg) | ![image](https://raw.github.com/r-lyeh/pug/master/images/dices.pug.alpha.png) | ![image](https://raw.github.com/r-lyeh/pug/master/images/dices.pug.rebuilt.png) |
-| PNG Image, 213 KiB | JPG layer, Q=50% | PNG layer, 8-bit | PUG Image, 74 KiB |
+| PNG Image, 213 KiB | JPG layer, Q=75% | PNG layer, 8-bit | PUG Image, 73 KiB |
 | ![image](https://raw.github.com/r-lyeh/pug/master/images/babytux.png) | ![image](https://raw.github.com/r-lyeh/pug/master/images/babytux.pug.color.jpg) | ![image](https://raw.github.com/r-lyeh/pug/master/images/babytux.pug.alpha.png) | ![image](https://raw.github.com/r-lyeh/pug/master/images/babytux.pug.rebuilt.png) |
-| PNG Image, 40 KiB | JPG layer, Q=50% | PNG layer, 8-bit | PUG Image, 22 KiB |
+| PNG Image, 40 KiB | JPG layer, Q=75% | PNG layer, 8-bit | PUG Image, 20 KiB |
 
 #### PUG file format specification
 - RGBA32 input image is split into RGB24.jpg and A8.png images, then glued together with a footer.
@@ -74,10 +74,10 @@ rgba.at(w,h) = rgb.at(w,h) * pixel(255,255,255,0) + alpha.at(w,h) * pixel(0,0,0,
 git submodule init
 git submodule update
 
-cl pugview.cc -I deps deps\spot\spot*.c* /Ox /Oy /MT /DNDEBUG
+cl pugview.cc -I deps deps\spot\spot*.c* /Ox /Oy /MT /DNDEBUG /link setargv.obj
 cl pugify.cc  -I deps deps\spot\spot*.c* /Ox /Oy /MT /DNDEBUG
 
-pugify.exe deps\spot\images\panda.png panda.pug 50
+pugify.exe deps\spot\images\panda.png panda.pug 75
 pugview.exe panda.pug
 
 pugify.exe panda.pug panda.png

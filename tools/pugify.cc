@@ -10,30 +10,53 @@
 
 #include "spot/spot.hpp"
 
-std::string read( const std::string &stream ) {
+#define VERSION "1.0.1"
+
+std::string readfile( const std::string &stream ) {
     std::ifstream ifs( stream, std::ios::binary );
     std::stringstream ss;
     ss << ifs.rdbuf();
     return ss.str();
 }
 
-std::string footer( const std::string &rgb24, const std::string &alpha8 ) {
+std::string mkfooter( const std::string &color24, const std::string &alpha08 ) {
     // @todo: endianness and alignment
     std::stringstream ss;
-    std::int32_t size24(  rgb24.size() );
-    std::int32_t size08( alpha8.size() );
+    std::int32_t size24( color24.size() );
+    std::int32_t size08( alpha08.size() );
     ss.write( (const char *)&size24, 4 );
     ss.write( (const char *)&size08, 4 );
     ss.write( "pug1", 4 );
     return ss.good() ? ss.str() : std::string();
 }
 
+bool rdfooter( const std::string &filename, std::int32_t &off24, std::int32_t &len24, std::int32_t &off08, std::int32_t &len08 ) {
+    std::ifstream ifs( filename.c_str(), std::ios::binary|std::ios::ate );
+    if( ifs.good() ) {
+        std::int32_t FEOF = std::int32_t( ifs.tellg() );
+        if( FEOF >= 12 ) {
+            ifs.seekg( -12, std::ios_base::end );
+            ifs.read( (char *)&len24, 4 );
+            ifs.read( (char *)&len08, 4 );
+            char info[5] = {};
+            ifs.read( (char *)info, 4 );
+            if( !strcmp( info, "pug1" ) ) {
+                off24 = FEOF - 12 - len08 - len24;
+                off08 = FEOF - 12 - len08;
+                return true;
+            }
+        }
+    }
+    off24 = len24 = off08 = len08 = 0;
+    return false;
+}
+
 int main( int argc, const char **_argv ) {
 
     if( argc < 3 ) {
         std::cout
-            << _argv[0] << " v1.0.0 - https://github.com/r-lyeh/pug"   << std::endl << std::endl
-            << "Usage: " << _argv[0] << " input.png output.pug [0..100]" << std::endl
+            << _argv[0] << " v" VERSION " - https://github.com/r-lyeh/pug"   << std::endl << std::endl
+            << "Usage: " << _argv[0] << " input.png output.pug [0..100]        (default quality: 70)" << std::endl
             << "Usage: " << _argv[0] << " input.pug output.png" << std::endl;
         return -1;
     }
@@ -50,63 +73,39 @@ int main( int argc, const char **_argv ) {
         std::tolower( ext[1] ) == 'u' &&
         std::tolower( ext[2] ) == 'g' ) {
 
-        char info[5] = {};
-        std::int32_t RGB24, A8, FEOF;
-        std::string data;
-        {
-            std::ifstream ifs( argv[1], std::ios::binary );
-            std::stringstream ss;
-            ss << ifs.rdbuf();
-            data = ss.str();
+        std::string data = readfile( argv[1] );
+
+        std::int32_t off24, len24;
+        std::int32_t off08, len08;
+        if( !rdfooter( argv[1], off24, len24, off08, len08 ) ) {
+            return std::cout << "bad input file: " << argv[1] << std::endl, -1;            
         }
 
-        {
-            std::ifstream ifs( argv[1], std::ios::binary|std::ios::ate );
-            FEOF = std::int32_t( ifs.tellg() );
-            ifs.seekg( -12, std::ios_base::end );
-            ifs.read( (char *)&RGB24, 4 );
-            ifs.read( (char *)&A8, 4 );
-            ifs.read( (char *)info, 4 );
-        }
+        spot::image color( &data[off24], len24 );
+        spot::image alpha( &data[off08], len08 );
 
-        if( strcmp( info, "pug1" ) )
-            return std::cout << "bad input file: " << info << std::endl, -1;
-
-        spot::image image( &data[FEOF - 12 - A8 - RGB24], RGB24 );
-        spot::image alpha( &data[FEOF - 12 - A8], A8 );
-
-        for( unsigned h = 0; h < image.h; ++h ) {
-            for( unsigned w = 0; w < image.w; ++w ) {
-                image.at(w,h).a = alpha.at(w,h).l;
+        for( unsigned h = 0; h < color.h; ++h ) {
+            for( unsigned w = 0; w < color.w; ++w ) {
+                color.at(w,h).a = alpha.at(w,h).l;
             }
         }
 
-        image.save_as_png( argv[2] );
-        return 0;
+        return color.save_as_png( argv[2] ) ? 0 : -1;
     }
     else
     {
-        spot::image image( argv[1] ), alpha( image.w, image.h );
+        spot::image color( argv[1] );
+        color = color.bleed();
 
-        image = image.bleed();
-
-        for( unsigned h = 0; h < image.h; ++h ) {
-            for( unsigned w = 0; w < image.w; ++w ) {
-                alpha.at(w,h) = image.at(w,h) * spot::color(0,0,0,1);
-                image.at(w,h) = image.at(w,h) * spot::color(1,1,1,0);
-            }
-        }
-
-        image.to_rgba().save_as_jpg( "$diffuse.jpg", quality );
-        std::string RGB24 = read( "$diffuse.jpg" );
-        unlink( "$diffuse.jpg" );
-
-        std::string A8 = alpha.to_rgba().encode_as_png( false, false, 8 );
+        std::string color24 = color.encode_as_jpg( quality );
+        std::string alpha08 = color.encode_as_png( false, false, 8 );
 
         std::ofstream ofs( argv[2], std::ios::binary );
-        ofs << RGB24 << A8 << footer( RGB24, A8 );
+        if( ofs.good() ) {
+            ofs << color24 << alpha08 << mkfooter( color24, alpha08 );
+        }
 
-        return 0;
+        return ofs.good() ? 0 : -1;
     }
 
     std::cout << "cannot determine input file" << std::endl;
