@@ -1,3 +1,0 @@
-[submodule "spot"]
-    path = tools/deps/spot
-    url = https://github.com/r-lyeh/spot
