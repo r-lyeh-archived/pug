@@ -1,6 +1,6 @@
-<img align="right" src="https://raw.github.com/r-lyeh/depot/master/pug.png" width="320" alt="@todo, disclaimer here: unknown author, pending credits http://i.ytimg.com/vi/pzPxhaYQQK8/hqdefault.jpg" />
+<img align="right" src="https://raw.github.com/r-lyeh/pug/master/images/logo.png" width="320" alt="@todo, disclaimer here: unknown author, pending credits http://i.ytimg.com/vi/pzPxhaYQQK8/hqdefault.jpg" />
+
 ### PUG
-####
 
 - pug, png with a twist: lossy image format.
 - pug, `PUG = color.JPG + alpha.PNG + footer`
